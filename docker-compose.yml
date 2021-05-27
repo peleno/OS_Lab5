@@ -1,0 +1,46 @@
+version: "3"
+
+services:
+  mysql:
+    image: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+      MYSQL_USER: "${MYSQL_USER}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+    volumes:
+      - ./create_database.sql:/docker-entrypoint-initdb.d/create_database.sql
+      - ./mysql_data:/var/lib/mysql
+
+  spring-app:
+    build: ./DB_Lab6
+    container_name: spring-app
+    ports:
+      - "8080:8080"
+    links:
+      - mysql
+    depends_on:
+      - mysql
+    environment:
+      MYSQL_USER: "${MYSQL_USER}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+      MYSQL_HOST: "${MYSQL_HOST}"
+      MYSQL_PORT: "${MYSQL_PORT}"
+
+  prometheus-app:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    links:
+      - spring-app
+    depends_on:
+      - spring-app
+
+  grafana-app:
+    image: grafana/grafana
+    depends_on:
+      - prometheus-app
+    ports:
+      - "3000:3000"
+
